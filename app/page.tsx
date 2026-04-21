@@ -814,17 +814,18 @@ export default function Home() {
 
         {showStats && (
           <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className={`${theme.bg2} border ${theme.border} rounded-2xl shadow-2xl shadow-cyan-500/10 p-8 w-full max-w-3xl max-h-[80vh] overflow-y-auto`}>
+            <div className={`${theme.bg2} border ${theme.border} rounded-2xl shadow-2xl shadow-cyan-500/10 p-8 w-full max-w-4xl max-h-[85vh] overflow-y-auto`}>
               <div className="flex justify-between items-center mb-6">
                 <h2 className={`text-2xl font-bold ${theme.text}`}>Estadisticas Globales</h2>
                 <button onClick={() => setShowStats(false)} className={`p-2 hover:bg-gray-700 rounded-lg cursor-pointer ${theme.text}`}>
                   <CloseOutlinedIcon />
                 </button>
               </div>
-              
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+
+              {/* Overview Cards */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                 <div className={`p-4 ${theme.bg} rounded-xl text-center border-2 border-cyan-500/30`}>
-                  <div className={`text-sm ${theme.text2}`}>Total</div>
+                  <div className={`text-sm ${theme.text2}`}>Total Dispositivos</div>
                   <div className={`text-3xl font-bold ${theme.text}`}>{devices.length}</div>
                 </div>
                 <div className={`p-4 ${theme.bg} rounded-xl text-center border-2 border-green-500/30`}>
@@ -835,33 +836,149 @@ export default function Home() {
                   <div className={`text-sm ${theme.text2}`}>Inactivos</div>
                   <div className="text-3xl font-bold text-red-400">{devices.filter(d => d.status === 'inactive').length}</div>
                 </div>
-                <div className={`p-4 ${theme.bg} rounded-xl text-center border-2 border-blue-500/30`}>
-                  <div className={`text-sm ${theme.text2}`}>con Ubicacion</div>
-                  <div className="text-3xl font-bold text-blue-400">{devices.filter(d => d.location && d.location.trim()).length}</div>
+                <div className={`p-4 ${theme.bg} rounded-xl text-center border-2 border-purple-500/30`}>
+                  <div className={`text-sm ${theme.text2}`}>Con Serie</div>
+                  <div className="text-3xl font-bold text-purple-400">{devices.filter(d => d.serial_number && d.serial_number.trim()).length}</div>
                 </div>
               </div>
 
-              <div className={`text-lg font-semibold ${theme.text} mb-4`}>Resumen de Dispositivos</div>
-              <div className={`p-4 ${theme.bg} rounded-xl space-y-3`}>
-                <div className="flex justify-between items-center">
-                  <span className={theme.text2}>Maquinas Expendedoras</span>
-                  <span className={`font-semibold ${theme.text}`}>{counts.ticket_machine}</span>
+              {/* Status Overview */}
+              <div className="mb-6">
+                <div className={`text-lg font-semibold ${theme.text} mb-3`}>Estado de Dispositivos</div>
+                <div className={`p-4 ${theme.bg} rounded-xl`}>
+                  <div className="flex h-6 rounded-full overflow-hidden mb-3">
+                    <div 
+                      className="bg-green-500 flex items-center justify-center text-xs text-white font-medium"
+                      style={{ width: `${devices.length > 0 ? (devices.filter(d => d.status === 'active').length / devices.length) * 100 : 0}%` }}
+                    >
+                      {devices.length > 0 && Math.round((devices.filter(d => d.status === 'active').length / devices.length) * 100) > 5 && `${Math.round((devices.filter(d => d.status === 'active').length / devices.length) * 100)}%`}
+                    </div>
+                    <div 
+                      className="bg-gray-500 flex items-center justify-center text-xs text-white font-medium"
+                      style={{ width: `${devices.length > 0 ? (devices.filter(d => d.status === 'inactive').length / devices.length) * 100 : 0}%` }}
+                    >
+                      {devices.length > 0 && Math.round((devices.filter(d => d.status === 'inactive').length / devices.length) * 100) > 5 && `${Math.round((devices.filter(d => d.status === 'inactive').length / devices.length) * 100)}%`}
+                    </div>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-green-400">{devices.filter(d => d.status === 'active').length} Activos ({devices.length > 0 ? Math.round((devices.filter(d => d.status === 'active').length / devices.length) * 100) : 0}%)</span>
+                    <span className="text-gray-400">{devices.filter(d => d.status === 'inactive').length} Inactivos ({devices.length > 0 ? Math.round((devices.filter(d => d.status === 'inactive').length / devices.length) * 100) : 0}%)</span>
+                  </div>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className={theme.text2}>Routers WiFi</span>
-                  <span className={`font-semibold ${theme.text}`}>{counts.wifi_router}</span>
+              </div>
+
+              {/* By Type */}
+              <div className="mb-6">
+                <div className={`text-lg font-semibold ${theme.text} mb-3`}>Por Tipo de Dispositivo</div>
+                <div className="space-y-3">
+                  {DEVICE_TYPES.map(dt => {
+                    const typeDevices = devices.filter(d => d.type === dt.value);
+                    const typeActive = typeDevices.filter(d => d.status === 'active').length;
+                    const percentage = devices.length > 0 ? Math.round((typeDevices.length / devices.length) * 100) : 0;
+                    return (
+                      <div key={dt.value} className={`p-4 ${theme.bg} rounded-xl`}>
+                        <div className="flex justify-between items-center mb-2">
+                          <div className="flex items-center gap-2">
+                            <dt.icon sx={{ fontSize: 20 }} className={theme.text2} />
+                            <span className={`font-medium ${theme.text}`}>{dt.label}</span>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span className={`text-sm ${theme.text2}`}>{typeDevices.length} ({percentage}%)</span>
+                            <span className="text-green-400 text-sm">{typeActive} activos</span>
+                          </div>
+                        </div>
+                        <div className="flex h-3 rounded-full overflow-hidden bg-gray-700">
+                          <div 
+                            className="bg-gradient-to-r from-cyan-500 to-blue-500"
+                            style={{ width: `${percentage}%` }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className={theme.text2}>Routers Transmision</span>
-                  <span className={`font-semibold ${theme.text}`}>{counts.transmission_router}</span>
+              </div>
+
+              {/* Locations */}
+              <div className="mb-6">
+                <div className={`text-lg font-semibold ${theme.text} mb-3`}>Por Ubicacion</div>
+                <div className={`p-4 ${theme.bg} rounded-xl`}>
+                  {(() => {
+                    const locationCounts: Record<string, number> = {};
+                    devices.forEach(d => {
+                      const loc = d.location?.trim() || 'Sin ubicación';
+                      locationCounts[loc] = (locationCounts[loc] || 0) + 1;
+                    });
+                    const sortedLocations = Object.entries(locationCounts).sort((a, b) => b[1] - a[1]);
+                    if (sortedLocations.length === 0 || (sortedLocations.length === 1 && sortedLocations[0][0] === 'Sin ubicación')) {
+                      return <div className={`text-center py-4 ${theme.text3}`}>No hay ubicaciones registradas</div>;
+                    }
+                    return (
+                      <div className="space-y-2">
+                        {sortedLocations.slice(0, 8).map(([loc, count]) => (
+                          <div key={loc} className="flex justify-between items-center">
+                            <span className={theme.text2}>{loc}</span>
+                            <div className="flex items-center gap-2">
+                              <div className={`w-24 h-2 bg-gray-700 rounded-full overflow-hidden`}>
+                                <div 
+                                  className="h-full bg-cyan-500 rounded-full"
+                                  style={{ width: `${(count / devices.length) * 100}%` }}
+                                />
+                              </div>
+                              <span className={`font-semibold ${theme.text} text-sm w-8 text-right`}>{count}</span>
+                            </div>
+                          </div>
+                        ))}
+                        {sortedLocations.length > 8 && (
+                          <div className={`text-center text-sm ${theme.text3} pt-2`}>+ {sortedLocations.length - 8} ubicaciones más</div>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className={theme.text2}>Lectores QR</span>
-                  <span className={`font-semibold ${theme.text}`}>{counts.qr_reader}</span>
-                </div>
-                <div className={`border-t ${theme.border} pt-3 mt-3 flex justify-between items-center`}>
-                  <span className={`font-semibold ${theme.text}`}>TOTAL</span>
-                  <span className={`font-bold text-xl text-cyan-400`}>{devices.length}</span>
+              </div>
+
+              {/* Summary Table */}
+              <div>
+                <div className={`text-lg font-semibold ${theme.text} mb-3`}>Resumen General</div>
+                <div className={`p-4 ${theme.bg} rounded-xl`}>
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className={`border-b ${theme.border}`}>
+                        <th className={`text-left py-2 ${theme.text2}`}>Tipo</th>
+                        <th className={`text-right py-2 ${theme.text2}`}>Total</th>
+                        <th className={`text-right py-2 ${theme.text2}`}>Activos</th>
+                        <th className={`text-right py-2 ${theme.text2}`}>Inactivos</th>
+                        <th className={`text-right py-2 ${theme.text2}`}>%</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {DEVICE_TYPES.map(dt => {
+                        const typeDevices = devices.filter(d => d.type === dt.value);
+                        const typeActive = typeDevices.filter(d => d.status === 'active').length;
+                        const typeInactive = typeDevices.filter(d => d.status === 'inactive').length;
+                        const percentage = devices.length > 0 ? Math.round((typeDevices.length / devices.length) * 100) : 0;
+                        return (
+                          <tr key={dt.value} className={`border-b ${theme.border}`}>
+                            <td className={`py-2 ${theme.text}`}>{dt.label}</td>
+                            <td className={`text-right py-2 font-semibold ${theme.text}`}>{typeDevices.length}</td>
+                            <td className="text-right py-2 text-green-400">{typeActive}</td>
+                            <td className="text-right py-2 text-gray-400">{typeInactive}</td>
+                            <td className={`text-right py-2 ${theme.text2}`}>{percentage}%</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                    <tfoot>
+                      <tr>
+                        <td className={`py-2 font-bold ${theme.text}`}>TOTAL</td>
+                        <td className={`text-right py-2 font-bold text-cyan-400`}>{devices.length}</td>
+                        <td className="text-right py-2 font-bold text-green-400">{devices.filter(d => d.status === 'active').length}</td>
+                        <td className="text-right py-2 font-bold text-gray-400">{devices.filter(d => d.status === 'inactive').length}</td>
+                        <td className={`text-right py-2 font-bold ${theme.text}`}>100%</td>
+                      </tr>
+                    </tfoot>
+                  </table>
                 </div>
               </div>
             </div>
