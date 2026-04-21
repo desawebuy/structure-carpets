@@ -447,14 +447,14 @@ export default function Home() {
           <div className="flex items-center gap-1">
             <button
               onClick={toggleDarkMode}
-              className={`w-9 h-9 flex items-center justify-center text-lg transition-colors cursor-pointer hover:bg-white/10 rounded-lg ${theme.text}`}
+              className="w-9 h-9 flex items-center justify-center text-lg cursor-pointer text-gray-500 hover:text-gray-200 rounded-lg transition-colors"
               title={darkMode ? 'Modo claro' : 'Modo oscuro'}
             >
               {darkMode ? '☀️' : '🌙'}
             </button>
             <button
               onClick={() => setShowStats(true)}
-              className={`w-9 h-9 flex items-center justify-center transition-colors cursor-pointer hover:bg-white/10 rounded-lg ${theme.textSecondary}`}
+              className="w-9 h-9 flex items-center justify-center cursor-pointer text-gray-500 hover:text-gray-200 rounded-lg transition-colors"
               title="Estadísticas globales"
             >
               <AssessmentOutlinedIcon sx={{ fontSize: 20 }} />
@@ -552,13 +552,13 @@ export default function Home() {
           <div className="flex items-center gap-1">
             <button 
               onClick={handleExport}
-              className={`p-2 rounded-lg cursor-pointer transition-colors ${theme.textSecondary} hover:bg-white/10`}
+              className="p-2 rounded-lg cursor-pointer text-gray-500 hover:text-gray-200 transition-colors"
               title="Exportar"
             >
               <DownloadIcon sx={{ fontSize: 20 }} />
             </button>
             
-            <label className={`p-2 rounded-lg cursor-pointer transition-colors ${theme.textSecondary} hover:bg-white/10 ${importing ? 'opacity-50' : ''}`}
+            <label className={`p-2 rounded-lg cursor-pointer text-gray-500 hover:text-gray-200 transition-colors ${importing ? 'opacity-50' : ''}`}
               title="Importar"
             >
               <UploadFileIcon sx={{ fontSize: 20 }} />
@@ -638,13 +638,13 @@ export default function Home() {
                         </button>
                       </td>
                       <td className="p-3 text-right">
-                        <button onClick={() => handleViewDetails(device)} className={`p-1.5 rounded-lg hover:bg-white/10 cursor-pointer ${theme.textSecondary}`} title="Ver detalles">
+                        <button onClick={() => handleViewDetails(device)} className="p-1.5 hover:text-gray-100 rounded-lg cursor-pointer text-gray-500 transition-colors" title="Ver detalles">
                           <VisibilityIcon sx={{ fontSize: 16 }} />
                         </button>
-                        <button onClick={() => handleEdit(device)} className="p-1.5 text-cyan-500 hover:bg-white/10 rounded-lg cursor-pointer" title="Editar">
+                        <button onClick={() => handleEdit(device)} className="p-1.5 hover:text-cyan-300 rounded-lg cursor-pointer text-cyan-500 transition-colors" title="Editar">
                           <EditOutlinedIcon sx={{ fontSize: 16 }} />
                         </button>
-                        <button onClick={() => device.id && handleDelete(device.id)} className="p-1.5 text-red-400 hover:bg-white/10 rounded-lg cursor-pointer" title="Eliminar">
+                        <button onClick={() => device.id && handleDelete(device.id)} className="p-1.5 hover:text-red-300 rounded-lg cursor-pointer text-red-400 transition-colors" title="Eliminar">
                           <DeleteOutlinedIcon sx={{ fontSize: 16 }} />
                         </button>
                       </td>
