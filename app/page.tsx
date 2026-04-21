@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
+import * as XLSX from 'xlsx';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
 import AddIcon from '@mui/icons-material/Add';
@@ -94,22 +95,29 @@ export default function Home() {
 
   const handleExport = () => {
     const dataToExport = filteredDevices;
-    const headers = ['Name', 'Type', 'Location', 'Serial Number', 'Status'];
-    const rows = dataToExport.map(d => [
-      d.name,
-      DEVICE_TYPES.find(t => t.value === d.type)?.label || d.type,
-      d.location,
-      d.serial_number,
-      d.status,
-    ]);
-    const csv = [headers, ...rows].map(row => row.join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'devices.csv';
-    a.click();
-    URL.revokeObjectURL(url);
+    const data = dataToExport.map(d => ({
+      Nombre: d.name,
+      Tipo: DEVICE_TYPES.find(t => t.value === d.type)?.label || d.type,
+      Ubicación: d.location || '',
+      'Número de Serie': d.serial_number || '',
+      Estado: d.status === 'active' ? 'Activo' : 'Inactivo',
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(data);
+    
+    const colWidths = [
+      { wch: 25 },
+      { wch: 20 },
+      { wch: 25 },
+      { wch: 20 },
+      { wch: 10 },
+    ];
+    ws['!cols'] = colWidths;
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Dispositivos');
+    
+    XLSX.writeFile(wb, 'devices.xlsx');
   };
 
   const fetchDevices = async () => {
@@ -265,13 +273,17 @@ export default function Home() {
   const getTypeConfig = (type: DeviceType) => DEVICE_TYPES.find(t => t.value === type);
 
   const theme = {
-    bg: darkMode ? 'bg-gray-950' : 'bg-gray-100',
-    bg2: darkMode ? 'bg-gray-900/50' : 'bg-white',
-    border: darkMode ? 'border-gray-800' : 'border-gray-200',
-    text: darkMode ? 'text-white' : 'text-gray-900',
-    text2: darkMode ? 'text-gray-100' : 'text-gray-600',
-    text3: darkMode ? 'text-gray-500' : 'text-gray-500',
-    input: darkMode ? 'bg-gray-950 border-gray-800 text-white' : 'bg-white border-gray-300 text-gray-900',
+    bg: darkMode ? 'bg-[#0a0a0b]' : 'bg-gray-50',
+    surface: darkMode ? 'bg-[#141417]' : 'bg-white',
+    surfaceHover: darkMode ? 'hover:bg-[#1c1c21]' : 'hover:bg-gray-50',
+    border: darkMode ? 'border-[#27272a]' : 'border-gray-200',
+    borderActive: darkMode ? 'border-[#3f3f46]' : 'border-gray-300',
+    text: darkMode ? 'text-gray-100' : 'text-gray-900',
+    textSecondary: darkMode ? 'text-gray-400' : 'text-gray-600',
+    textMuted: darkMode ? 'text-gray-500' : 'text-gray-400',
+    accent: darkMode ? 'text-cyan-400' : 'text-cyan-600',
+    accentBg: darkMode ? 'bg-cyan-400' : 'bg-cyan-600',
+    input: darkMode ? 'bg-[#0a0a0b] border-[#27272a] text-gray-100' : 'bg-white border-gray-200 text-gray-900',
   };
 
   const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -405,10 +417,10 @@ export default function Home() {
     return (
       <div className={`min-h-screen ${theme.bg} p-8`}>
         <div className="max-w-6xl mx-auto">
-          <h1 className={`text-3xl font-bold mb-8 ${theme.text}`}>Registro de Dispositivos</h1>
-          <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-6">
-            <h2 className="text-xl font-semibold text-red-400 mb-2">Error de Conexion</h2>
-            <p className="text-red-300">{error}</p>
+          <h1 className={`text-3xl font-semibold mb-8 ${theme.text}`}>Registro de Dispositivos</h1>
+          <div className={`${theme.surface} border ${theme.border} rounded-lg p-6`}>
+            <h2 className={`text-lg font-medium mb-2 ${theme.text}`}>Error de Conexión</h2>
+            <p className={theme.textMuted}>{error}</p>
           </div>
         </div>
       </div>
@@ -416,113 +428,73 @@ export default function Home() {
   }
 
   return (
-    <div className={`min-h-screen ${theme.bg} transition-colors relative overflow-hidden`}>
-      {darkMode && (
-        <>
-          <div className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] rounded-full bg-gradient-to-br from-cyan-500/20 to-blue-600/10 blur-[100px] pointer-events-none" />
-          <div className="absolute bottom-[-10%] right-[-5%] w-[400px] h-[400px] rounded-full bg-gradient-to-tl from-blue-500/15 to-cyan-400/10 blur-[80px] pointer-events-none" />
-        </>
-      )}
-
-      <div className="relative z-10 max-w-7xl mx-auto p-6">
+    <div className={`min-h-screen ${theme.bg} transition-colors`}>
+      <div className="max-w-7xl mx-auto p-6">
         <header className="flex justify-between items-center mb-8">
           <div>
-            <h1 className={`text-4xl font-bold ${darkMode ? 'bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent' : 'text-gray-900'}`}>
+            <h1 className={`text-2xl font-semibold ${theme.text}`}>
               Registro de Dispositivos
             </h1>
-            <p className={`${theme.text3} mt-1`}>Gestiona tu infraestructura</p>
+            <p className={`text-sm ${theme.textMuted} mt-1`}>Gestiona tu infraestructura</p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <button
               onClick={toggleDarkMode}
-              className="w-12 h-12 rounded-full flex items-center justify-center text-2xl transition-all cursor-pointer hover:opacity-70"
+              className={`w-9 h-9 rounded-lg flex items-center justify-center text-lg transition-colors cursor-pointer ${theme.surface} border ${theme.border} hover:${theme.borderActive} ${theme.text}`}
             >
               {darkMode ? '☀️' : '🌙'}
             </button>
             <button
               onClick={() => setShowStats(true)}
-              className="w-12 h-12 rounded-full flex items-center justify-center text-xl transition-all cursor-pointer hover:opacity-70"
-              title="Estadisticas globales"
+              className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors cursor-pointer ${theme.surface} border ${theme.border} hover:${theme.borderActive} ${theme.textSecondary}`}
+              title="Estadísticas globales"
             >
-              <AssessmentOutlinedIcon className={theme.text} />
+              <AssessmentOutlinedIcon sx={{ fontSize: 20 }} />
             </button>
           </div>
         </header>
 
-        <div className={`grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6`}>
-          <button
-            onClick={() => setFilterType('ticket_machine')}
-            className={`group relative overflow-hidden rounded-2xl p-6 transition-all duration-300 cursor-pointer ${
-              filterType === 'ticket_machine'
-                ? 'bg-gradient-to-br from-blue-500/20 to-cyan-400/20 border-2 border-cyan-400/50 scale-105 shadow-lg shadow-cyan-500/20'
-                : `${theme.bg2} border-2 ${theme.border} hover:border-gray-700`
-            }`}
-          >
-            <div className="relative flex flex-col items-center">
-              <ConfirmationNumberOutlinedIcon sx={{ fontSize: 40 }} className={`mb-2 ${theme.text}`} />
-              <div className={`text-sm ${theme.text2}`}>Maquina Expendedora</div>
-              <div className={`text-3xl font-bold ${theme.text} mt-2`}>{counts.ticket_machine}</div>
-            </div>
-          </button>
-          <button
-            onClick={() => setFilterType('wifi_router')}
-            className={`group relative overflow-hidden rounded-2xl p-6 transition-all duration-300 cursor-pointer ${
-              filterType === 'wifi_router'
-                ? 'bg-gradient-to-br from-green-400/20 to-emerald-500/20 border-2 border-emerald-500/50 scale-105 shadow-lg shadow-emerald-500/20'
-                : `${theme.bg2} border-2 ${theme.border} hover:border-gray-700`
-            }`}
-          >
-            <div className="relative flex flex-col items-center">
-              <WifiTetheringOutlinedIcon sx={{ fontSize: 40 }} className={`mb-2 ${theme.text}`} />
-              <div className={`text-sm ${theme.text2}`}>Router WiFi</div>
-              <div className={`text-3xl font-bold ${theme.text} mt-2`}>{counts.wifi_router}</div>
-            </div>
-          </button>
-          <button
-            onClick={() => setFilterType('transmission_router')}
-            className={`group relative overflow-hidden rounded-2xl p-6 transition-all duration-300 cursor-pointer ${
-              filterType === 'transmission_router'
-                ? 'bg-gradient-to-br from-purple-500/20 to-pink-400/20 border-2 border-pink-500/50 scale-105 shadow-lg shadow-pink-500/20'
-                : `${theme.bg2} border-2 ${theme.border} hover:border-gray-700`
-            }`}
-          >
-            <div className="relative flex flex-col items-center">
-              <RouterOutlinedIcon sx={{ fontSize: 40 }} className={`mb-2 ${theme.text}`} />
-              <div className={`text-sm ${theme.text2}`}>Router Transmision</div>
-              <div className={`text-3xl font-bold ${theme.text} mt-2`}>{counts.transmission_router}</div>
-            </div>
-          </button>
-          <button
-            onClick={() => setFilterType('qr_reader')}
-            className={`group relative overflow-hidden rounded-2xl p-6 transition-all duration-300 cursor-pointer ${
-              filterType === 'qr_reader'
-                ? 'bg-gradient-to-br from-orange-400/20 to-red-500/20 border-2 border-red-500/50 scale-105 shadow-lg shadow-red-500/20'
-                : `${theme.bg2} border-2 ${theme.border} hover:border-gray-700`
-            }`}
-          >
-            <div className="relative flex flex-col items-center">
-              <QrCode2OutlinedIcon sx={{ fontSize: 40 }} className={`mb-2 ${theme.text}`} />
-              <div className={`text-sm ${theme.text2}`}>Lector QR</div>
-              <div className={`text-3xl font-bold ${theme.text} mt-2`}>{counts.qr_reader}</div>
-            </div>
-          </button>
+        <div className={`grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6`}>
+          {DEVICE_TYPES.map(dt => {
+            const TypeIcon = dt.icon;
+            const isActive = filterType === dt.value;
+            return (
+              <button
+                key={dt.value}
+                onClick={() => setFilterType(dt.value as DeviceType | 'all')}
+                className={`relative p-4 rounded-lg border transition-all duration-200 cursor-pointer text-left ${
+                  isActive
+                    ? `${theme.surface} border-cyan-500/60`
+                    : `${theme.surface} border ${theme.border} hover:${theme.borderActive}`
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className={`${isActive ? 'text-cyan-400' : theme.textSecondary}`}>
+                    <TypeIcon sx={{ fontSize: 24 }} />
+                  </div>
+                  <div className={`text-xl font-medium ${theme.text}`}>{counts[dt.value as DeviceType]}</div>
+                </div>
+                <div className={`text-sm mt-2 ${theme.textSecondary}`}>{dt.label}</div>
+              </button>
+            );
+          })}
         </div>
 
-        <div className={`flex justify-between items-center mb-6 flex-wrap gap-4`}>
-          <div className="flex items-center gap-4 flex-wrap">
-            <div className={`flex items-center gap-2 px-3 py-2 h-10 ${theme.bg2} border ${theme.border} rounded-xl`}>
-              <SearchIcon className={theme.text3} />
+        <div className={`flex justify-between items-center mb-4 flex-wrap gap-3`}>
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className={`flex items-center gap-2 px-3 h-9 ${theme.surface} border ${theme.border} rounded-md`}>
+              <SearchIcon sx={{ fontSize: 18 }} className={theme.textMuted} />
               <input
                 id="search-input"
                 type="text"
                 placeholder="Buscar..."
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                className={`bg-transparent outline-none w-32 ${theme.text} placeholder-gray-500`}
+                className={`bg-transparent outline-none w-28 text-sm ${theme.text} placeholder-gray-500`}
               />
               {searchQuery && (
-                <button onClick={() => setSearchQuery('')} className={`${theme.text3} hover:${theme.text}`}>
-                  <CloseOutlinedIcon fontSize="small" />
+                <button onClick={() => setSearchQuery('')} className={`${theme.textMuted} hover:${theme.text}`}>
+                  <CloseOutlinedIcon sx={{ fontSize: 16 }} />
                 </button>
               )}
             </div>
@@ -530,7 +502,7 @@ export default function Home() {
             <select
               value={filterType}
               onChange={e => setFilterType(e.target.value as DeviceType | 'all')}
-              className={`h-10 ${theme.bg2} border ${theme.border} rounded-xl px-4 py-2 ${theme.text} focus:border-cyan-500/50 focus:outline-none transition-colors cursor-pointer`}
+              className={`h-9 text-sm ${theme.surface} border ${theme.border} rounded-md px-3 ${theme.text} focus:border-cyan-500/50 focus:outline-none transition-colors cursor-pointer`}
             >
               <option value="all">Todos</option>
               <option value="ticket_machine">Maquina Expendedora</option>
@@ -541,7 +513,7 @@ export default function Home() {
             {filterType !== 'all' && (
               <button 
                 onClick={() => setFilterType('all')}
-                className="text-cyan-400 hover:text-cyan-300 text-sm cursor-pointer"
+                className="text-sm text-cyan-500 hover:text-cyan-400 cursor-pointer"
               >
                 Limpiar
               </button>
@@ -549,37 +521,37 @@ export default function Home() {
             {filteredDevices.length > 0 && (
               <button 
                 onClick={toggleSelectAll}
-                className={`flex items-center gap-1 px-3 h-10 border rounded-lg cursor-pointer transition-colors ${
+                className={`flex items-center gap-1 px-3 h-9 text-sm border rounded-md cursor-pointer transition-colors ${
                   selectedIds.length === filteredDevices.length && filteredDevices.length > 0
-                    ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-400'
-                    : `${theme.bg2} ${theme.border} ${theme.text2} hover:border-cyan-500/50`
+                    ? 'bg-cyan-500/10 border-cyan-500/40 text-cyan-400'
+                    : `${theme.surface} ${theme.border} ${theme.textSecondary} hover:border-cyan-500/40`
                 }`}
               >
-                <DoneAllIcon fontSize="small" />
+                <DoneAllIcon sx={{ fontSize: 16 }} />
                 {selectedIds.length === filteredDevices.length ? 'Deseleccionar' : 'Seleccionar'}
               </button>
             )}
             {selectedIds.length > 0 && (
               <button 
                 onClick={deleteSelected}
-                className="flex items-center gap-1 px-3 h-10 bg-red-500/20 border border-red-500/50 hover:bg-red-500/30 rounded-lg cursor-pointer transition-colors text-red-400"
+                className="flex items-center gap-1 px-3 h-9 text-sm bg-red-500/10 border border-red-500/30 hover:bg-red-500/20 rounded-md cursor-pointer transition-colors text-red-400"
               >
-                <DeleteSweepIcon fontSize="small" />
+                <DeleteSweepIcon sx={{ fontSize: 16 }} />
                 ({selectedIds.length})
               </button>
             )}
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <button 
               onClick={handleExport}
-              className={`p-3 rounded-xl cursor-pointer transition-all ${theme.text} hover:opacity-70`}
+              className={`p-2 rounded-md cursor-pointer transition-colors ${theme.textSecondary} hover:${theme.text} hover:${theme.surfaceHover}`}
             >
-              <DownloadIcon />
+              <DownloadIcon sx={{ fontSize: 20 }} />
             </button>
             
-            <label className={`p-3 rounded-xl cursor-pointer transition-all ${theme.text} ${importing ? 'opacity-50' : ''} hover:opacity-70`}>
-              <UploadFileIcon />
-              {importing ? 'Importando...' : ''}
+            <label className={`p-2 rounded-md cursor-pointer transition-colors ${theme.textSecondary} hover:${theme.text} hover:${theme.surfaceHover} ${importing ? 'opacity-50' : ''}`}>
+              <UploadFileIcon sx={{ fontSize: 20 }} />
+              {importing && <span className="ml-2 text-xs">Importando...</span>}
               <input
                 type="file"
                 accept=".csv,.txt"
@@ -590,79 +562,79 @@ export default function Home() {
             </label>
             <button
               onClick={() => setShowForm(true)}
-              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-xl font-medium hover:from-cyan-400 hover:to-blue-500 transition-all shadow-lg shadow-cyan-500/20 text-white"
+              className="flex items-center gap-1.5 px-4 h-9 bg-cyan-500 hover:bg-cyan-400 rounded-md font-medium text-sm text-white transition-colors cursor-pointer"
             >
-              <AddIcon />
+              <AddIcon sx={{ fontSize: 18 }} />
               Agregar
             </button>
           </div>
         </div>
 
-        <div className={`${theme.bg2} border ${theme.border} rounded-2xl overflow-hidden backdrop-blur`}>
+        <div className={`${theme.surface} border ${theme.border} rounded-lg overflow-hidden`}>
           <table className="w-full">
-            <thead className={darkMode ? 'bg-gray-900/80' : 'bg-gray-50'}>
+            <thead className={darkMode ? 'bg-[#0a0a0b]/50' : 'bg-gray-50/50'}>
               <tr>
-                <th className={`w-12 p-4`}></th>
-                <th className={`text-left p-4 font-medium ${theme.text2}`}>Nombre</th>
-                <th className={`text-left p-4 font-medium ${theme.text2}`}>Tipo</th>
-                <th className={`text-left p-4 font-medium ${theme.text2}`}>Ubicacion</th>
-                <th className={`text-left p-4 font-medium ${theme.text2}`}>Serie</th>
-                <th className={`text-left p-4 font-medium ${theme.text2}`}>Estado</th>
-                <th className={`text-right p-4 font-medium ${theme.text2}`}>Acciones</th>
+                <th className="w-10 p-3"></th>
+                <th className="text-left p-3 text-sm font-medium text-gray-500">Nombre</th>
+                <th className="text-left p-3 text-sm font-medium text-gray-500">Tipo</th>
+                <th className="text-left p-3 text-sm font-medium text-gray-500">Ubicación</th>
+                <th className="text-left p-3 text-sm font-medium text-gray-500">Serie</th>
+                <th className="text-left p-3 text-sm font-medium text-gray-500">Estado</th>
+                <th className="text-right p-3 text-sm font-medium text-gray-500">Acciones</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={7} className={`p-12 text-center ${theme.text3}`}>Cargando...</td></tr>
+                <tr><td colSpan={7} className={`p-8 text-center text-sm ${theme.textMuted}`}>Cargando...</td></tr>
               ) : paginatedDevices.length === 0 ? (
-                <tr><td colSpan={7} className={`p-12 text-center ${theme.text3}`}>No se encontraron dispositivos</td></tr>
+                <tr><td colSpan={7} className={`p-8 text-center text-sm ${theme.textMuted}`}>No se encontraron dispositivos</td></tr>
               ) : (
                 paginatedDevices.map(device => {
                   const config = getTypeConfig(device.type);
                   const TypeIcon = config?.icon;
                   return (
-                    <tr key={device.id} className={`border-t ${theme.border} hover:bg-cyan-500/5 transition-colors`}>
-                      <td className="p-4">
+                    <tr key={device.id} className={`border-t ${theme.border} transition-colors hover:${theme.surfaceHover}`}>
+                      <td className="p-3">
                         <button 
                           onClick={() => device.id && toggleSelect(device.id)}
-                          className="cursor-pointer p-1"
+                          className="cursor-pointer p-0.5"
                         >
                           {device.id && selectedIds.includes(device.id) 
-                            ? <CheckBoxIcon className="text-cyan-400" />
-                            : <CheckBoxOutlineBlankIcon className={theme.text2} />
+                            ? <CheckBoxIcon sx={{ fontSize: 18 }} className="text-cyan-500" />
+                            : <CheckBoxOutlineBlankIcon sx={{ fontSize: 18 }} className={theme.textMuted} />
                           }
                         </button>
                       </td>
-                      <td className={`p-4 ${theme.text} font-medium`}>{device.name}</td>
-                      <td className="p-4">
-                        <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full ${theme.bg} text-sm`}>
-                          {TypeIcon && <TypeIcon sx={{ fontSize: 18 }} />}
-                          <span className={theme.text2}>{config?.label}</span>
+                      <td className={`p-3 text-sm ${theme.text}`}>{device.name}</td>
+                      <td className="p-3">
+                        <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded text-xs ${darkMode ? 'bg-gray-800' : 'bg-gray-100'} ${theme.textSecondary}`}>
+                          {TypeIcon && <TypeIcon sx={{ fontSize: 14 }} />}
+                          <span>{config?.label}</span>
                         </span>
                       </td>
-                      <td className={`p-4 ${theme.text2}`}>{device.location || '-'}</td>
-                      <td className={`p-4 font-mono text-sm ${theme.text3}`}>{device.serial_number || '-'}</td>
-                      <td className="p-4">
+                      <td className={`p-3 text-sm ${theme.textSecondary}`}>{device.location || '-'}</td>
+                      <td className={`p-3 text-sm font-mono ${theme.textMuted}`}>{device.serial_number || '-'}</td>
+                      <td className="p-3">
                         <button 
                           onClick={() => toggleStatus(device)}
-                          className={`px-3 py-1 rounded-full text-sm cursor-pointer ${
+                          className={`px-2 py-1 rounded text-xs cursor-pointer transition-colors ${
                             device.status === 'active' 
-                              ? 'bg-green-500/20 text-green-400 border border-green-500/50' 
-                              : 'bg-gray-500/20 text-gray-400 border border-gray-500/50'
+                              ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' 
+                              : 'bg-gray-500/15 text-gray-400 border border-gray-500/30'
                           }`}
                         >
                           {device.status === 'active' ? 'Activo' : 'Inactivo'}
                         </button>
                       </td>
-                      <td className="p-4 text-right">
-                        <button onClick={() => handleViewDetails(device)} className={`p-2 hover:bg-gray-700 rounded-lg cursor-pointer ${theme.text2}`}>
-                          <VisibilityIcon />
+                      <td className="p-3 text-right">
+                        <button onClick={() => handleViewDetails(device)} className={`p-1.5 rounded hover:${theme.surfaceHover} cursor-pointer ${theme.textSecondary}`}>
+                          <VisibilityIcon sx={{ fontSize: 16 }} />
                         </button>
-                        <button onClick={() => handleEdit(device)} className={`p-2 text-cyan-400 hover:bg-cyan-500/20 rounded-lg cursor-pointer`}>
-                          <EditOutlinedIcon />
+                        <button onClick={() => handleEdit(device)} className="p-1.5 text-cyan-500 hover:bg-cyan-500/10 rounded cursor-pointer">
+                          <EditOutlinedIcon sx={{ fontSize: 16 }} />
                         </button>
-                        <button onClick={() => device.id && handleDelete(device.id)} className={`p-2 text-red-400 hover:bg-red-500/20 rounded-lg cursor-pointer`}>
-                          <DeleteOutlinedIcon />
+                        <button onClick={() => device.id && handleDelete(device.id)} className="p-1.5 text-red-400 hover:bg-red-500/10 rounded cursor-pointer">
+                          <DeleteOutlinedIcon sx={{ fontSize: 16 }} />
                         </button>
                       </td>
                     </tr>
@@ -673,25 +645,25 @@ export default function Home() {
           </table>
           
           {totalPages > 1 && (
-            <div className={`flex items-center justify-between p-4 border-t ${theme.border}`}>
-              <div className={`text-sm ${theme.text3}`}>
-                Mostrando {((currentPage - 1) * ITEMS_PER_PAGE) + 1}-{Math.min(currentPage * ITEMS_PER_PAGE, filteredDevices.length)} de {filteredDevices.length}
+            <div className={`flex items-center justify-between p-3 border-t ${theme.border}`}>
+              <div className={`text-xs ${theme.textMuted}`}>
+                {((currentPage - 1) * ITEMS_PER_PAGE) + 1}-{Math.min(currentPage * ITEMS_PER_PAGE, filteredDevices.length)} de {filteredDevices.length}
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1">
                 <button 
                   onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                   disabled={currentPage === 1}
-                  className={`p-2 rounded-lg ${currentPage === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-700 cursor-pointer'} ${theme.text}`}
+                  className={`p-1.5 rounded ${currentPage === 1 ? 'opacity-40 cursor-not-allowed' : 'hover:bg-gray-800 cursor-pointer'} ${theme.textSecondary}`}
                 >
-                  <ChevronLeftIcon />
+                  <ChevronLeftIcon sx={{ fontSize: 18 }} />
                 </button>
-                <span className={theme.text2}>Pagina {currentPage} de {totalPages}</span>
+                <span className={`text-xs px-2 ${theme.textSecondary}`}>Página {currentPage} de {totalPages}</span>
                 <button 
                   onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                   disabled={currentPage === totalPages}
-                  className={`p-2 rounded-lg ${currentPage === totalPages ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-700 cursor-pointer'} ${theme.text}`}
+                  className={`p-1.5 rounded ${currentPage === totalPages ? 'opacity-40 cursor-not-allowed' : 'hover:bg-gray-800 cursor-pointer'} ${theme.textSecondary}`}
                 >
-                  <ChevronRightIcon />
+                  <ChevronRightIcon sx={{ fontSize: 18 }} />
                 </button>
               </div>
             </div>
@@ -699,28 +671,33 @@ export default function Home() {
         </div>
 
         {showForm && (
-          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className={`${theme.bg2} border ${theme.border} rounded-2xl shadow-2xl shadow-cyan-500/10 p-8 w-full max-w-md`}>
-              <h2 className={`text-2xl font-bold mb-6 ${theme.text}`}>{editingDevice ? 'Editar Dispositivo' : 'Agregar Dispositivo'}</h2>
-              {error && <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 text-red-400 rounded-lg">{error}</div>}
-              <form onSubmit={handleSubmit} className="space-y-5">
+          <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
+            <div className={`${theme.surface} border ${theme.border} rounded-lg p-6 w-full max-w-sm`}>
+              <div className="flex justify-between items-center mb-5">
+                <h2 className={`text-lg font-medium ${theme.text}`}>{editingDevice ? 'Editar Dispositivo' : 'Agregar Dispositivo'}</h2>
+                <button onClick={resetForm} className={`p-1 rounded hover:${theme.surfaceHover} cursor-pointer ${theme.textSecondary}`}>
+                  <CloseOutlinedIcon sx={{ fontSize: 20 }} />
+                </button>
+              </div>
+              {error && <div className="mb-4 p-2.5 bg-red-500/10 border border-red-500/20 text-red-400 text-sm rounded">{error}</div>}
+              <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className={`block text-sm font-medium ${theme.text2} mb-2`}>Nombre</label>
+                  <label className={`block text-xs font-medium ${theme.textSecondary} mb-1.5`}>Nombre</label>
                   <input
                     type="text"
                     required
                     value={formData.name}
                     onChange={e => setFormData({ ...formData, name: e.target.value })}
-                    className={`w-full px-4 py-3 ${theme.input} rounded-xl focus:border-cyan-500/50 focus:outline-none transition-colors`}
+                    className={`w-full px-3 py-2 text-sm ${theme.input} rounded border focus:border-cyan-500/50 focus:outline-none transition-colors`}
                     placeholder="Nombre del dispositivo"
                   />
                 </div>
                 <div>
-                  <label className={`block text-sm font-medium ${theme.text2} mb-2`}>Tipo</label>
+                  <label className={`block text-xs font-medium ${theme.textSecondary} mb-1.5`}>Tipo</label>
                   <select
                     value={formData.type}
                     onChange={e => setFormData({ ...formData, type: e.target.value as DeviceType })}
-                    className={`w-full px-4 py-3 ${theme.input} rounded-xl focus:border-cyan-500/50 focus:outline-none transition-colors`}
+                    className={`w-full px-3 py-2 text-sm ${theme.input} rounded border focus:border-cyan-500/50 focus:outline-none transition-colors`}
                   >
                     {DEVICE_TYPES.map(dt => (
                       <option key={dt.value} value={dt.value}>{dt.label}</option>
@@ -728,42 +705,42 @@ export default function Home() {
                   </select>
                 </div>
                 <div>
-                  <label className={`block text-sm font-medium ${theme.text2} mb-2`}>Ubicacion</label>
+                  <label className={`block text-xs font-medium ${theme.textSecondary} mb-1.5`}>Ubicación</label>
                   <input
                     type="text"
                     value={formData.location}
                     onChange={e => setFormData({ ...formData, location: e.target.value })}
-                    className={`w-full px-4 py-3 ${theme.input} rounded-xl focus:border-cyan-500/50 focus:outline-none transition-colors`}
-                    placeholder="Ubicacion opcional"
+                    className={`w-full px-3 py-2 text-sm ${theme.input} rounded border focus:border-cyan-500/50 focus:outline-none transition-colors`}
+                    placeholder="Ubicación opcional"
                   />
                 </div>
                 <div>
-                  <label className={`block text-sm font-medium ${theme.text2} mb-2`}>Numero de Serie</label>
+                  <label className={`block text-xs font-medium ${theme.textSecondary} mb-1.5`}>Número de Serie</label>
                   <input
                     type="text"
                     value={formData.serial_number}
                     onChange={e => setFormData({ ...formData, serial_number: e.target.value })}
-                    className={`w-full px-4 py-3 ${theme.input} rounded-xl focus:border-cyan-500/50 focus:outline-none transition-colors`}
+                    className={`w-full px-3 py-2 text-sm ${theme.input} rounded border focus:border-cyan-500/50 focus:outline-none transition-colors`}
                     placeholder="SN-XXXXX"
                   />
                 </div>
                 <div>
-                  <label className={`block text-sm font-medium ${theme.text2} mb-2`}>Estado</label>
+                  <label className={`block text-xs font-medium ${theme.textSecondary} mb-1.5`}>Estado</label>
                   <select
                     value={formData.status || 'active'}
                     onChange={e => setFormData({ ...formData, status: e.target.value as 'active' | 'inactive' })}
-                    className={`w-full px-4 py-3 ${theme.input} rounded-xl focus:border-cyan-500/50 focus:outline-none transition-colors`}
+                    className={`w-full px-3 py-2 text-sm ${theme.input} rounded border focus:border-cyan-500/50 focus:outline-none transition-colors`}
                   >
                     <option value="active">Activo</option>
                     <option value="inactive">Inactivo</option>
                   </select>
                 </div>
-                <div className="flex gap-3 pt-3">
-                  <button type="submit" className="flex-1 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-xl font-medium hover:from-cyan-400 hover:to-blue-500 transition-all shadow-lg shadow-cyan-500/20 text-white">
+                <div className="flex gap-2 pt-2">
+                  <button type="submit" className="flex-1 py-2 bg-cyan-500 hover:bg-cyan-400 rounded text-sm font-medium text-white transition-colors cursor-pointer">
                     {editingDevice ? 'Guardar' : 'Agregar'}
                   </button>
-                  <button type="button" onClick={resetForm} className={`flex-1 py-3 ${theme.bg2} border ${theme.border} rounded-xl hover:border-cyan-500/50 transition-colors ${theme.text}`}>
-                    <CloseOutlinedIcon />Cancelar
+                  <button type="button" onClick={resetForm} className={`flex-1 py-2 ${theme.surface} border ${theme.border} rounded text-sm hover:${theme.borderActive} transition-colors cursor-pointer ${theme.text}`}>
+                    Cancelar
                   </button>
                 </div>
               </form>
@@ -772,37 +749,37 @@ export default function Home() {
         )}
 
         {showDetails && detailsDevice && (
-          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className={`${theme.bg2} border ${theme.border} rounded-2xl shadow-2xl shadow-cyan-500/10 p-8 w-full max-w-lg max-h-[80vh] overflow-y-auto`}>
-              <div className="flex justify-between items-center mb-6">
-                <h2 className={`text-2xl font-bold ${theme.text}`}>Detalles del Dispositivo</h2>
-                <button onClick={() => setShowDetails(false)} className={`p-2 hover:bg-gray-700 rounded-lg cursor-pointer ${theme.text}`}>
-                  <CloseOutlinedIcon />
+          <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
+            <div className={`${theme.surface} border ${theme.border} rounded-lg p-6 w-full max-w-sm`}>
+              <div className="flex justify-between items-center mb-5">
+                <h2 className={`text-lg font-medium ${theme.text}`}>Detalles del Dispositivo</h2>
+                <button onClick={() => setShowDetails(false)} className={`p-1 rounded hover:${theme.surfaceHover} cursor-pointer ${theme.textSecondary}`}>
+                  <CloseOutlinedIcon sx={{ fontSize: 20 }} />
                 </button>
               </div>
-              <div className="space-y-4">
-                <div className={`p-4 ${theme.bg} rounded-xl`}>
-                  <div className={`text-sm ${theme.text3}`}>Nombre</div>
-                  <div className={`text-lg font-medium ${theme.text}`}>{detailsDevice.name}</div>
+              <div className="space-y-3">
+                <div className={`p-3 rounded ${darkMode ? 'bg-[#0a0a0b]' : 'bg-gray-50'}`}>
+                  <div className={`text-xs ${theme.textMuted}`}>Nombre</div>
+                  <div className={`text-sm font-medium ${theme.text}`}>{detailsDevice.name}</div>
                 </div>
-                <div className={`p-4 ${theme.bg} rounded-xl`}>
-                  <div className={`text-sm ${theme.text3}`}>Tipo</div>
-                  <div className={`text-lg font-medium ${theme.text}`}>{DEVICE_TYPES.find(t => t.value === detailsDevice.type)?.label}</div>
+                <div className={`p-3 rounded ${darkMode ? 'bg-[#0a0a0b]' : 'bg-gray-50'}`}>
+                  <div className={`text-xs ${theme.textMuted}`}>Tipo</div>
+                  <div className={`text-sm font-medium ${theme.text}`}>{DEVICE_TYPES.find(t => t.value === detailsDevice.type)?.label}</div>
                 </div>
-                <div className={`p-4 ${theme.bg} rounded-xl`}>
-                  <div className={`text-sm ${theme.text3}`}>Ubicacion</div>
-                  <div className={`text-lg font-medium ${theme.text}`}>{detailsDevice.location || '-'}</div>
+                <div className={`p-3 rounded ${darkMode ? 'bg-[#0a0a0b]' : 'bg-gray-50'}`}>
+                  <div className={`text-xs ${theme.textMuted}`}>Ubicación</div>
+                  <div className={`text-sm font-medium ${theme.text}`}>{detailsDevice.location || '-'}</div>
                 </div>
-                <div className={`p-4 ${theme.bg} rounded-xl`}>
-                  <div className={`text-sm ${theme.text3}`}>Numero de Serie</div>
-                  <div className={`text-lg font-medium font-mono ${theme.text}`}>{detailsDevice.serial_number || '-'}</div>
+                <div className={`p-3 rounded ${darkMode ? 'bg-[#0a0a0b]' : 'bg-gray-50'}`}>
+                  <div className={`text-xs ${theme.textMuted}`}>Número de Serie</div>
+                  <div className={`text-sm font-medium font-mono ${theme.text}`}>{detailsDevice.serial_number || '-'}</div>
                 </div>
-                <div className={`p-4 ${theme.bg} rounded-xl`}>
-                  <div className={`text-sm ${theme.text3}`}>Estado</div>
-                  <span className={`px-3 py-1 rounded-full text-sm ${
+                <div className={`p-3 rounded ${darkMode ? 'bg-[#0a0a0b]' : 'bg-gray-50'}`}>
+                  <div className={`text-xs ${theme.textMuted}`}>Estado</div>
+                  <span className={`inline-block mt-1 px-2 py-0.5 rounded text-xs ${
                     detailsDevice.status === 'active' 
-                      ? 'bg-green-500/20 text-green-400' 
-                      : 'bg-gray-500/20 text-gray-400'
+                      ? 'bg-emerald-500/15 text-emerald-400' 
+                      : 'bg-gray-500/15 text-gray-400'
                   }`}>
                     {detailsDevice.status === 'active' ? 'Activo' : 'Inactivo'}
                   </span>
@@ -813,83 +790,73 @@ export default function Home() {
         )}
 
         {showStats && (
-          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className={`${theme.bg2} border ${theme.border} rounded-2xl shadow-2xl shadow-cyan-500/10 p-8 w-full max-w-4xl max-h-[85vh] overflow-y-auto`}>
-              <div className="flex justify-between items-center mb-6">
-                <h2 className={`text-2xl font-bold ${theme.text}`}>Estadisticas Globales</h2>
-                <button onClick={() => setShowStats(false)} className={`p-2 hover:bg-gray-700 rounded-lg cursor-pointer ${theme.text}`}>
-                  <CloseOutlinedIcon />
+          <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
+            <div className={`${theme.surface} border ${theme.border} rounded-lg p-6 w-full max-w-2xl max-h-[85vh] overflow-y-auto`}>
+              <div className="flex justify-between items-center mb-5">
+                <h2 className={`text-lg font-medium ${theme.text}`}>Estadísticas Globales</h2>
+                <button onClick={() => setShowStats(false)} className={`p-1 rounded hover:${theme.surfaceHover} cursor-pointer ${theme.textSecondary}`}>
+                  <CloseOutlinedIcon sx={{ fontSize: 20 }} />
                 </button>
               </div>
 
-              {/* Overview Cards */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                <div className={`p-4 ${theme.bg} rounded-xl text-center border-2 border-cyan-500/30`}>
-                  <div className={`text-sm ${theme.text2}`}>Total Dispositivos</div>
-                  <div className={`text-3xl font-bold ${theme.text}`}>{devices.length}</div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+                <div className={`p-3 rounded border ${theme.border} text-center`}>
+                  <div className={`text-xs ${theme.textMuted}`}>Total</div>
+                  <div className={`text-xl font-medium ${theme.text}`}>{devices.length}</div>
                 </div>
-                <div className={`p-4 ${theme.bg} rounded-xl text-center border-2 border-green-500/30`}>
-                  <div className={`text-sm ${theme.text2}`}>Activos</div>
-                  <div className="text-3xl font-bold text-green-400">{devices.filter(d => d.status === 'active').length}</div>
+                <div className={`p-3 rounded border ${theme.border} text-center`}>
+                  <div className={`text-xs ${theme.textMuted}`}>Activos</div>
+                  <div className="text-xl font-medium text-emerald-400">{devices.filter(d => d.status === 'active').length}</div>
                 </div>
-                <div className={`p-4 ${theme.bg} rounded-xl text-center border-2 border-red-500/30`}>
-                  <div className={`text-sm ${theme.text2}`}>Inactivos</div>
-                  <div className="text-3xl font-bold text-red-400">{devices.filter(d => d.status === 'inactive').length}</div>
+                <div className={`p-3 rounded border ${theme.border} text-center`}>
+                  <div className={`text-xs ${theme.textMuted}`}>Inactivos</div>
+                  <div className="text-xl font-medium text-gray-400">{devices.filter(d => d.status === 'inactive').length}</div>
                 </div>
-                <div className={`p-4 ${theme.bg} rounded-xl text-center border-2 border-purple-500/30`}>
-                  <div className={`text-sm ${theme.text2}`}>Con Serie</div>
-                  <div className="text-3xl font-bold text-purple-400">{devices.filter(d => d.serial_number && d.serial_number.trim()).length}</div>
+                <div className={`p-3 rounded border ${theme.border} text-center`}>
+                  <div className={`text-xs ${theme.textMuted}`}>Con Serie</div>
+                  <div className="text-xl font-medium text-cyan-400">{devices.filter(d => d.serial_number && d.serial_number.trim()).length}</div>
                 </div>
               </div>
 
-              {/* Status Overview */}
-              <div className="mb-6">
-                <div className={`text-lg font-semibold ${theme.text} mb-3`}>Estado de Dispositivos</div>
-                <div className={`p-4 ${theme.bg} rounded-xl`}>
-                  <div className="flex h-6 rounded-full overflow-hidden mb-3">
+              <div className="mb-5">
+                <div className={`text-sm font-medium ${theme.text} mb-2`}>Estado de Dispositivos</div>
+                <div className={`p-3 rounded ${darkMode ? 'bg-[#0a0a0b]' : 'bg-gray-50'}`}>
+                  <div className="flex h-2 rounded-full overflow-hidden mb-2">
                     <div 
-                      className="bg-green-500 flex items-center justify-center text-xs text-white font-medium"
+                      className="bg-emerald-500"
                       style={{ width: `${devices.length > 0 ? (devices.filter(d => d.status === 'active').length / devices.length) * 100 : 0}%` }}
-                    >
-                      {devices.length > 0 && Math.round((devices.filter(d => d.status === 'active').length / devices.length) * 100) > 5 && `${Math.round((devices.filter(d => d.status === 'active').length / devices.length) * 100)}%`}
-                    </div>
+                    />
                     <div 
-                      className="bg-gray-500 flex items-center justify-center text-xs text-white font-medium"
+                      className="bg-gray-500"
                       style={{ width: `${devices.length > 0 ? (devices.filter(d => d.status === 'inactive').length / devices.length) * 100 : 0}%` }}
-                    >
-                      {devices.length > 0 && Math.round((devices.filter(d => d.status === 'inactive').length / devices.length) * 100) > 5 && `${Math.round((devices.filter(d => d.status === 'inactive').length / devices.length) * 100)}%`}
-                    </div>
+                    />
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-green-400">{devices.filter(d => d.status === 'active').length} Activos ({devices.length > 0 ? Math.round((devices.filter(d => d.status === 'active').length / devices.length) * 100) : 0}%)</span>
-                    <span className="text-gray-400">{devices.filter(d => d.status === 'inactive').length} Inactivos ({devices.length > 0 ? Math.round((devices.filter(d => d.status === 'inactive').length / devices.length) * 100) : 0}%)</span>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-emerald-400">{devices.filter(d => d.status === 'active').length} Activos</span>
+                    <span className="text-gray-400">{devices.filter(d => d.status === 'inactive').length} Inactivos</span>
                   </div>
                 </div>
               </div>
 
-              {/* By Type */}
-              <div className="mb-6">
-                <div className={`text-lg font-semibold ${theme.text} mb-3`}>Por Tipo de Dispositivo</div>
-                <div className="space-y-3">
+              <div className="mb-5">
+                <div className={`text-sm font-medium ${theme.text} mb-2`}>Por Tipo</div>
+                <div className="space-y-2">
                   {DEVICE_TYPES.map(dt => {
                     const typeDevices = devices.filter(d => d.type === dt.value);
                     const typeActive = typeDevices.filter(d => d.status === 'active').length;
                     const percentage = devices.length > 0 ? Math.round((typeDevices.length / devices.length) * 100) : 0;
                     return (
-                      <div key={dt.value} className={`p-4 ${theme.bg} rounded-xl`}>
-                        <div className="flex justify-between items-center mb-2">
+                      <div key={dt.value} className={`p-3 rounded ${darkMode ? 'bg-[#0a0a0b]' : 'bg-gray-50'}`}>
+                        <div className="flex justify-between items-center mb-1.5">
+                          <span className={`text-sm ${theme.text}`}>{dt.label}</span>
                           <div className="flex items-center gap-2">
-                            <dt.icon sx={{ fontSize: 20 }} className={theme.text2} />
-                            <span className={`font-medium ${theme.text}`}>{dt.label}</span>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <span className={`text-sm ${theme.text2}`}>{typeDevices.length} ({percentage}%)</span>
-                            <span className="text-green-400 text-sm">{typeActive} activos</span>
+                            <span className={`text-xs ${theme.textMuted}`}>{typeDevices.length}</span>
+                            <span className="text-xs text-emerald-400">{typeActive} activos</span>
                           </div>
                         </div>
-                        <div className="flex h-3 rounded-full overflow-hidden bg-gray-700">
+                        <div className={`h-1.5 rounded-full overflow-hidden ${darkMode ? 'bg-gray-800' : 'bg-gray-200'}`}>
                           <div 
-                            className="bg-gradient-to-r from-cyan-500 to-blue-500"
+                            className="h-full bg-cyan-500 rounded-full"
                             style={{ width: `${percentage}%` }}
                           />
                         </div>
@@ -899,10 +866,9 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Locations */}
-              <div className="mb-6">
-                <div className={`text-lg font-semibold ${theme.text} mb-3`}>Por Ubicacion</div>
-                <div className={`p-4 ${theme.bg} rounded-xl`}>
+              <div className="mb-5">
+                <div className={`text-sm font-medium ${theme.text} mb-2`}>Por Ubicación</div>
+                <div className={`p-3 rounded ${darkMode ? 'bg-[#0a0a0b]' : 'bg-gray-50'}`}>
                   {(() => {
                     const locationCounts: Record<string, number> = {};
                     devices.forEach(d => {
@@ -911,26 +877,26 @@ export default function Home() {
                     });
                     const sortedLocations = Object.entries(locationCounts).sort((a, b) => b[1] - a[1]);
                     if (sortedLocations.length === 0 || (sortedLocations.length === 1 && sortedLocations[0][0] === 'Sin ubicación')) {
-                      return <div className={`text-center py-4 ${theme.text3}`}>No hay ubicaciones registradas</div>;
+                      return <div className={`text-center text-sm ${theme.textMuted}`}>No hay ubicaciones registradas</div>;
                     }
                     return (
                       <div className="space-y-2">
-                        {sortedLocations.slice(0, 8).map(([loc, count]) => (
+                        {sortedLocations.slice(0, 6).map(([loc, count]) => (
                           <div key={loc} className="flex justify-between items-center">
-                            <span className={theme.text2}>{loc}</span>
+                            <span className={`text-sm ${theme.textSecondary}`}>{loc}</span>
                             <div className="flex items-center gap-2">
-                              <div className={`w-24 h-2 bg-gray-700 rounded-full overflow-hidden`}>
+                              <div className={`w-16 h-1.5 rounded-full overflow-hidden ${darkMode ? 'bg-gray-800' : 'bg-gray-200'}`}>
                                 <div 
                                   className="h-full bg-cyan-500 rounded-full"
                                   style={{ width: `${(count / devices.length) * 100}%` }}
                                 />
                               </div>
-                              <span className={`font-semibold ${theme.text} text-sm w-8 text-right`}>{count}</span>
+                              <span className={`text-xs font-medium ${theme.text} w-5 text-right`}>{count}</span>
                             </div>
                           </div>
                         ))}
-                        {sortedLocations.length > 8 && (
-                          <div className={`text-center text-sm ${theme.text3} pt-2`}>+ {sortedLocations.length - 8} ubicaciones más</div>
+                        {sortedLocations.length > 6 && (
+                          <div className={`text-center text-xs ${theme.textMuted} pt-1`}>+ {sortedLocations.length - 6} más</div>
                         )}
                       </div>
                     );
@@ -938,18 +904,16 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Summary Table */}
               <div>
-                <div className={`text-lg font-semibold ${theme.text} mb-3`}>Resumen General</div>
-                <div className={`p-4 ${theme.bg} rounded-xl`}>
-                  <table className="w-full text-sm">
+                <div className={`text-sm font-medium ${theme.text} mb-2`}>Resumen</div>
+                <div className={`p-3 rounded ${darkMode ? 'bg-[#0a0a0b]' : 'bg-gray-50'}`}>
+                  <table className="w-full text-xs">
                     <thead>
                       <tr className={`border-b ${theme.border}`}>
-                        <th className={`text-left py-2 ${theme.text2}`}>Tipo</th>
-                        <th className={`text-right py-2 ${theme.text2}`}>Total</th>
-                        <th className={`text-right py-2 ${theme.text2}`}>Activos</th>
-                        <th className={`text-right py-2 ${theme.text2}`}>Inactivos</th>
-                        <th className={`text-right py-2 ${theme.text2}`}>%</th>
+                        <th className={`text-left py-2 ${theme.textMuted}`}>Tipo</th>
+                        <th className={`text-right py-2 ${theme.textMuted}`}>Total</th>
+                        <th className={`text-right py-2 ${theme.textMuted}`}>Activos</th>
+                        <th className={`text-right py-2 ${theme.textMuted}`}>Inactivos</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -957,25 +921,22 @@ export default function Home() {
                         const typeDevices = devices.filter(d => d.type === dt.value);
                         const typeActive = typeDevices.filter(d => d.status === 'active').length;
                         const typeInactive = typeDevices.filter(d => d.status === 'inactive').length;
-                        const percentage = devices.length > 0 ? Math.round((typeDevices.length / devices.length) * 100) : 0;
                         return (
                           <tr key={dt.value} className={`border-b ${theme.border}`}>
-                            <td className={`py-2 ${theme.text}`}>{dt.label}</td>
-                            <td className={`text-right py-2 font-semibold ${theme.text}`}>{typeDevices.length}</td>
-                            <td className="text-right py-2 text-green-400">{typeActive}</td>
+                            <td className={`py-2 ${theme.textSecondary}`}>{dt.label}</td>
+                            <td className={`text-right py-2 font-medium ${theme.text}`}>{typeDevices.length}</td>
+                            <td className="text-right py-2 text-emerald-400">{typeActive}</td>
                             <td className="text-right py-2 text-gray-400">{typeInactive}</td>
-                            <td className={`text-right py-2 ${theme.text2}`}>{percentage}%</td>
                           </tr>
                         );
                       })}
                     </tbody>
                     <tfoot>
                       <tr>
-                        <td className={`py-2 font-bold ${theme.text}`}>TOTAL</td>
-                        <td className={`text-right py-2 font-bold text-cyan-400`}>{devices.length}</td>
-                        <td className="text-right py-2 font-bold text-green-400">{devices.filter(d => d.status === 'active').length}</td>
-                        <td className="text-right py-2 font-bold text-gray-400">{devices.filter(d => d.status === 'inactive').length}</td>
-                        <td className={`text-right py-2 font-bold ${theme.text}`}>100%</td>
+                        <td className={`py-2 font-medium ${theme.text}`}>TOTAL</td>
+                        <td className={`text-right py-2 font-medium text-cyan-400`}>{devices.length}</td>
+                        <td className="text-right py-2 font-medium text-emerald-400">{devices.filter(d => d.status === 'active').length}</td>
+                        <td className="text-right py-2 font-medium text-gray-400">{devices.filter(d => d.status === 'inactive').length}</td>
                       </tr>
                     </tfoot>
                   </table>
