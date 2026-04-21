@@ -444,16 +444,17 @@ export default function Home() {
             </h1>
             <p className={`text-sm ${theme.textMuted} mt-1`}>Gestiona tu infraestructura</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             <button
               onClick={toggleDarkMode}
-              className={`w-9 h-9 rounded-lg flex items-center justify-center text-lg transition-colors cursor-pointer ${theme.surface} border ${theme.border} hover:${theme.borderActive} ${theme.text}`}
+              className={`w-9 h-9 flex items-center justify-center text-lg transition-colors cursor-pointer hover:bg-white/10 rounded-lg ${theme.text}`}
+              title={darkMode ? 'Modo claro' : 'Modo oscuro'}
             >
               {darkMode ? '☀️' : '🌙'}
             </button>
             <button
               onClick={() => setShowStats(true)}
-              className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors cursor-pointer ${theme.surface} border ${theme.border} hover:${theme.borderActive} ${theme.textSecondary}`}
+              className={`w-9 h-9 flex items-center justify-center transition-colors cursor-pointer hover:bg-white/10 rounded-lg ${theme.textSecondary}`}
               title="Estadísticas globales"
             >
               <AssessmentOutlinedIcon sx={{ fontSize: 20 }} />
@@ -471,8 +472,8 @@ export default function Home() {
                 onClick={() => setFilterType(dt.value as DeviceType | 'all')}
                 className={`relative p-4 rounded-lg border transition-all duration-200 cursor-pointer text-left ${
                   isActive
-                    ? `${theme.surface} border-cyan-500/60`
-                    : `${theme.surface} border ${theme.border} hover:${theme.borderActive}`
+                    ? `bg-gradient-to-br from-cyan-500/20 to-teal-500/10 border-cyan-500/50`
+                    : `${theme.surface} border ${theme.border} hover:bg-gradient-to-br hover:from-cyan-500/10 hover:to-teal-500/5 hover:border-cyan-500/30`
                 }`}
               >
                 <div className="flex items-center justify-between">
@@ -548,15 +549,18 @@ export default function Home() {
               </button>
             )}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             <button 
               onClick={handleExport}
-              className={`p-2 rounded-md cursor-pointer transition-colors ${theme.textSecondary} hover:${theme.text} hover:${theme.surfaceHover}`}
+              className={`p-2 rounded-lg cursor-pointer transition-colors ${theme.textSecondary} hover:bg-white/10`}
+              title="Exportar"
             >
               <DownloadIcon sx={{ fontSize: 20 }} />
             </button>
             
-            <label className={`p-2 rounded-md cursor-pointer transition-colors ${theme.textSecondary} hover:${theme.text} hover:${theme.surfaceHover} ${importing ? 'opacity-50' : ''}`}>
+            <label className={`p-2 rounded-lg cursor-pointer transition-colors ${theme.textSecondary} hover:bg-white/10 ${importing ? 'opacity-50' : ''}`}
+              title="Importar"
+            >
               <UploadFileIcon sx={{ fontSize: 20 }} />
               {importing && <span className="ml-2 text-xs">Importando...</span>}
               <input
@@ -634,13 +638,13 @@ export default function Home() {
                         </button>
                       </td>
                       <td className="p-3 text-right">
-                        <button onClick={() => handleViewDetails(device)} className={`p-1.5 rounded hover:${theme.surfaceHover} cursor-pointer ${theme.textSecondary}`}>
+                        <button onClick={() => handleViewDetails(device)} className={`p-1.5 rounded-lg hover:bg-white/10 cursor-pointer ${theme.textSecondary}`} title="Ver detalles">
                           <VisibilityIcon sx={{ fontSize: 16 }} />
                         </button>
-                        <button onClick={() => handleEdit(device)} className="p-1.5 text-cyan-500 hover:bg-cyan-500/10 rounded cursor-pointer">
+                        <button onClick={() => handleEdit(device)} className="p-1.5 text-cyan-500 hover:bg-white/10 rounded-lg cursor-pointer" title="Editar">
                           <EditOutlinedIcon sx={{ fontSize: 16 }} />
                         </button>
-                        <button onClick={() => device.id && handleDelete(device.id)} className="p-1.5 text-red-400 hover:bg-red-500/10 rounded cursor-pointer">
+                        <button onClick={() => device.id && handleDelete(device.id)} className="p-1.5 text-red-400 hover:bg-white/10 rounded-lg cursor-pointer" title="Eliminar">
                           <DeleteOutlinedIcon sx={{ fontSize: 16 }} />
                         </button>
                       </td>
@@ -682,7 +686,7 @@ export default function Home() {
             <div className={`${theme.surface} border ${theme.border} rounded-lg p-6 w-full max-w-sm`}>
               <div className="flex justify-between items-center mb-5">
                 <h2 className={`text-lg font-medium ${theme.text}`}>{editingDevice ? 'Editar Dispositivo' : 'Agregar Dispositivo'}</h2>
-                <button onClick={resetForm} className={`p-1 rounded hover:${theme.surfaceHover} cursor-pointer ${theme.textSecondary}`}>
+                <button onClick={resetForm} className={`p-1.5 rounded-lg hover:bg-white/10 cursor-pointer ${theme.textSecondary}`}>
                   <CloseOutlinedIcon sx={{ fontSize: 20 }} />
                 </button>
               </div>
