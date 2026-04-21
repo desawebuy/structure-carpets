@@ -428,8 +428,15 @@ export default function Home() {
   }
 
   return (
-    <div className={`min-h-screen ${theme.bg} transition-colors`}>
-      <div className="max-w-7xl mx-auto p-6">
+    <div className={`min-h-screen ${theme.bg} transition-colors relative overflow-hidden`}>
+      {darkMode && (
+        <>
+          <div className="absolute top-[-15%] right-[-10%] w-[600px] h-[600px] rounded-full bg-gradient-to-br from-cyan-500/20 via-teal-500/10 to-transparent blur-[120px] pointer-events-none" />
+          <div className="absolute bottom-[-20%] left-[-15%] w-[500px] h-[500px] rounded-full bg-gradient-to-tr from-emerald-500/15 via-cyan-500/10 to-transparent blur-[100px] pointer-events-none" />
+          <div className="absolute top-[40%] left-[60%] w-[300px] h-[300px] rounded-full bg-gradient-to-br from-teal-400/10 to-transparent blur-[80px] pointer-events-none" />
+        </>
+      )}
+      <div className="relative z-10 max-w-7xl mx-auto p-6">
         <header className="flex justify-between items-center mb-8">
           <div>
             <h1 className={`text-2xl font-semibold ${theme.text}`}>
